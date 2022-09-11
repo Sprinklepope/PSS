@@ -12,7 +12,6 @@ from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.properties import ObjectProperty
 from kivy.uix.popup import Popup
 from kivy.uix.label import Label
-#from database import DataBase
 from kivy.uix.widget import Widget
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.anchorlayout import AnchorLayout
@@ -29,6 +28,7 @@ def val(url):
 
 
     try:
+        #checking if the url has forms
         session = HTMLSession()
         def get_all_forms(userurl):
             res = session.get(userurl)
@@ -44,26 +44,24 @@ def val(url):
     except:
         invalidMessage = "Invalid url"
 
-    print(invalidMessage)
     return (hasforms, invalidMessage)
 
-def mmap_io_find(filename, urlinput, self):
+def mmap_io_find(filename, urlinput, self): #url provided without paramaters can not be tested for vulnerabilities
     with open(filename, mode="r", encoding="utf-8") as file_obj:
         s= mmap.mmap(file_obj.fileno(), length=0, access=mmap.ACCESS_READ)
         if s.find(b'no parameter(s) found for testing in the provided data') != -1:
             print('string exist in a file this birch doesnt have parameters')
             invalidSearch("The url provided does not have any parameters", "no parameters")
         else:
-            modQ = query.Init()
+            modQ = query.Init(urlinput)
             dumpR = bigdump(urlinput)
-            #show_popup(True, False, True, self)
             show_popup(dumpR, modQ[0], modQ[1], self)
 
 def bigdump(urlinput):
     dumpedflag = False
     result = subprocess.run("sqlmap -u " + urlinput + " --dump-all --batch --threads=5 > dumpoutput.txt ", shell=True, stdin=subprocess.PIPE)
 
-
+    #check for amount of entries dumped - entries must be > 0 for dump to be successful
     mf = open((os.getcwd()+ "/dumpoutput.txt"), "r+")
     file_line = mf.readline()
     while file_line:
@@ -76,7 +74,6 @@ def bigdump(urlinput):
             m = re.search('(\d+) entries', file_line, re.IGNORECASE)  # no entries
         file_line = mf.readline()
     mf.close()
-    print(dumpedflag)
     return dumpedflag
 
 
@@ -85,7 +82,6 @@ class MyMainWindow(Screen):
 
     def SearchBtn(self):
         urlinput = self.url.text
-        print(urlinput)
         res = val(urlinput)
         if res[0]:
             self.reset()
@@ -116,7 +112,7 @@ def show_popup(dumped, modified, queried, self):
         resultingString += "Database Modified\n"
     if queried:
         resultingString += "Database Queried\n"
-    resultingString+= "\n"
+    resultingString += "\n"
 
     resultingString += "Attacks Failed: \n\n"
     if not dumped:
@@ -128,36 +124,26 @@ def show_popup(dumped, modified, queried, self):
 
 
     show.ids.result.text = resultingString
-    #popupWindow = Popup( title="Popup Window", content=show, size_hint=(None,None),size=(400,400), auto_dismiss=False)
     popupWindow = Popup(title="Vulnerability Report", content=show, size_hint=(.85, .6), auto_dismiss=False)
-    # Create the popup window
-
-    #popupWindow = Popup(title="VulnerabilityReport", content="reeeeee", size_hint=(None,None))
-
-    popupWindow.open() # show the popup
+    popupWindow.open() #show the popup
 
 
 class WindowManager(ScreenManager):
     pass
 
 def invalidSearch(msg,header):
-    pop = Popup(title=header,
-                  content=Label(text=msg),
-                  size_hint=(None, None), size=(400, 400))
+    pop = Popup(title=header, content=Label(text=msg), size_hint=(None, None), size=(400, 400))
     pop.open()
 
 kv = Builder.load_file("mymain.kv")
 
 sm = WindowManager()
-#db = DataBase("users.txt")
 
-screens = [MyMainWindow(name="mymain")]
+screens = [MyMainWindow(name="PSS")]
 for screen in screens:
     sm.add_widget(screen)
 
-sm.current = "mymain"
-
-
+sm.current = "PSS"
 
 class MyMainApp(App):
     def build(self):
