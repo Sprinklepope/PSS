@@ -1,4 +1,5 @@
 import os
+import bz2
 import query
 import time
 import re
@@ -18,8 +19,9 @@ from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.button import Button
 from kivy.core.window import Window
 from kivy.graphics import Color
+import sys
 
-
+#url example: http://testphp.vulnweb.com/artists.php?artist=3
 
 def val(url):
     invalidMessage = ""
@@ -55,7 +57,7 @@ def mmap_io_find(filename, urlinput, self): #url provided without paramaters can
         else:
             modQ = query.Init(urlinput)
             dumpR = bigdump(urlinput)
-            show_popup(dumpR, modQ[0], modQ[1], self)
+            show_popup(dumpR, modQ[0], modQ[1], self) #Test case: TRUE, TRUE, FALSE
 
 def bigdump(urlinput):
     dumpedflag = False
@@ -151,4 +153,5 @@ class MyMainApp(App):
 
 
 if __name__ == "__main__":
+
     MyMainApp().run()

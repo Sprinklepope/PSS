@@ -16,7 +16,7 @@ def checkForUnallowedQuery(tableDef: tableDefinition.TableDefinition, blacklist:
 
 def Init(url):
     Queryflag = False
-    Modifyflag = False
+    Modifyflag = True # stacked query error guaranteed - set as true for initial - will be false!
     blacklist = ["phone", "pass", "address", "email"]
     # blacklist = ["SUB_PART","DATA_LENGTH"]
 
@@ -110,8 +110,7 @@ def Init(url):
             for a in range(len(modifydecode)):
                 if modifydecode[a].find("execution of non-query SQL statements is only available when stacked queries are supported") != -1:
                     Modifyflag = False
-                else:
-                    Modifyflag = False
+
             break
 
     return (Modifyflag, Queryflag)
